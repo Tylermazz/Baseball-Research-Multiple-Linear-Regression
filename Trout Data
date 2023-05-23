@@ -1,0 +1,85 @@
+# Resources
+
+## Petti, Bill. 2020. Baseballr: 
+## Functions for Acquiring and Analyzing Baseball Data. 
+## https://billpetti.github.io/baseballr/. 
+
+## Matthew Wankiewicz
+## Logistic modelling
+## https://www.matthewwankiewicz.com/post/2021-06-04-using-logistic-regression-to-predict-baseball-playoff-probabilities/#ref-citebaseballr
+
+## Jim Albert
+## The baseballr package
+## https://baseballwithr.wordpress.com/2017/02/06/baseballr-package-a-first-look/
+# Data collection
+# install.packages("baseballr")
+install.packages('tidyverse')
+library(tidyverse)
+library(baseballr)
+library(dplyr)
+
+# 2016 Mike Trout
+S <- scrape_statcast_savant_batter("2016-04-01",
+                                   "2016-10-05",
+                                   batterid = 545361)
+Trout17 <- scrape_statcast_savant_batter("2017-03-22",
+                                         "2017-10-05",
+                                         batterid = 545361)
+Trout18 <- scrape_statcast_savant_batter("2018-03-22",
+                                         "2018-10-05",
+                                         batterid = 545361)
+Trout19 <- scrape_statcast_savant_batter("2019-03-22",
+                                         "2019-10-05",
+                                         batterid = 545361)
+Trout20 <- scrape_statcast_savant_batter("2020-03-22",
+                                         "2020-10-05",
+                                         batterid = 545361)
+Trout21 <- scrape_statcast_savant_batter("2021-03-22",
+                                         "2021-10-05",
+                                         batterid = 545361)
+Trout22 <- scrape_statcast_savant_batter("2022-03-22",
+                                         "2022-10-05",
+                                         batterid = 545361)
+
+Trout.full <- rbind(S,Trout17,Trout18,Trout19,Trout20,Trout21,Trout22)
+Trout.ip <- Trout.full %>% filter(Trout.full$description == "hit_into_play")
+
+velo <- xyplot(Trout.ip$launch_angle~Trout.ip$launch_speed, data = Trout.ip,
+               group = Trout.ip$events==4,
+               col = c("blue","red"))
+velo
+
+doubles <- xyplot(Trout.ip$launch_angle~Trout.ip$launch_speed, data = Trout.ip,
+               group = Trout.ip$events==2,
+               col = c("blue","red"))
+doubles
+
+data.frame(Trout.ip)
+Trout.ip$events <- ifelse(Trout.ip$events=="field_out" | Trout.ip$events== "grounded_into_double_play",0,
+                          ifelse(Trout.ip$events== "fielders_choice",0,
+                               ifelse(Trout.ip$events== "single" | Trout.ip$events== "field_error",1,
+                                      ifelse(Trout.ip$events== "double",2,
+                                             ifelse(Trout.ip$events== "triple",3,
+                                                    ifelse(Trout.ip$events== "home_run",4,0))))))
+
+Trout.ip$pitch_type <- ifelse(Trout.ip$pitch_type=="FF" | Trout.ip$pitch_type=="SI",1,
+                              ifelse(Trout.ip$pitch_type=="FS" | Trout.ip$pitch_type=="FA",1,
+                                  ifelse(Trout.ip$pitch_type== "CU" | Trout.ip$pitch_type=="KC",2,
+                                        ifelse(Trout.ip$pitch_type== "SL" |  Trout.ip$pitch_type=="FC",3,
+                                               ifelse(Trout.ip$pitch_type== "CH" | Trout.ip$pitch_type== "KN",4,0)))))
+
+
+Trout.model <- Trout.ip %>% select(events, balls, strikes, release_speed, zone, launch_speed, launch_angle, hit_distance_sc, pitch_type, outs_when_up, inning)
+fit1 <- lm(events ~ launch_angle + zone + release_speed + launch_speed + hit_distance_sc + outs_when_up + inning + pitch_type + balls + strikes, data=Trout.ip)
+msummary(fit1)
+
+library(mosaic)
+trout.homers <- xyplot(Trout.full$launch_angle~Trout.full$hit_distance_sc, data=Trout.full,
+                  group = Trout.full$events == "home_run", xlab = "Distance", ylab = "Launch Angle"
+)
+trout.homers
+
+trout.zone <- xyplot(Trout.full$zone~Trout.full$hit_distance_sc, data=Trout.full,
+                  group = Trout.full$events == "home_run", xlab = "Distance", ylab = "Zone"
+)
+trout.zone
