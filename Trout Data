@@ -43,6 +43,13 @@ Trout22 <- scrape_statcast_savant_batter("2022-03-22",
 
 Trout.full <- rbind(S,Trout17,Trout18,Trout19,Trout20,Trout21,Trout22)
 Trout.ip <- Trout.full %>% filter(Trout.full$description == "hit_into_play")
+data.frame(Trout.ip)
+Trout.ip$events <- ifelse(Trout.ip$events=="field_out" | Trout.ip$events== "grounded_into_double_play",0,
+                          ifelse(Trout.ip$events== "fielders_choice",0,
+                               ifelse(Trout.ip$events== "single" | Trout.ip$events== "field_error",1,
+                                      ifelse(Trout.ip$events== "double",2,
+                                             ifelse(Trout.ip$events== "triple",3,
+                                                    ifelse(Trout.ip$events== "home_run",4,0))))))
 
 velo <- xyplot(Trout.ip$launch_angle~Trout.ip$launch_speed, data = Trout.ip,
                group = Trout.ip$events==4,
@@ -53,14 +60,6 @@ doubles <- xyplot(Trout.ip$launch_angle~Trout.ip$launch_speed, data = Trout.ip,
                group = Trout.ip$events==2,
                col = c("blue","red"))
 doubles
-
-data.frame(Trout.ip)
-Trout.ip$events <- ifelse(Trout.ip$events=="field_out" | Trout.ip$events== "grounded_into_double_play",0,
-                          ifelse(Trout.ip$events== "fielders_choice",0,
-                               ifelse(Trout.ip$events== "single" | Trout.ip$events== "field_error",1,
-                                      ifelse(Trout.ip$events== "double",2,
-                                             ifelse(Trout.ip$events== "triple",3,
-                                                    ifelse(Trout.ip$events== "home_run",4,0))))))
 
 Trout.ip$pitch_type <- ifelse(Trout.ip$pitch_type=="FF" | Trout.ip$pitch_type=="SI",1,
                               ifelse(Trout.ip$pitch_type=="FS" | Trout.ip$pitch_type=="FA",1,
